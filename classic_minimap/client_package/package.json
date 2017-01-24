@@ -1,0 +1,7 @@
+{
+  "name": "classic_minimap",
+  "version": "0.2.0",
+  "description": "The JC2 minimap with a JC3 theme",
+  "author": "Ollie 'TangoChicken' Platt",
+  "license": "MIT"
+}

@@ -1,0 +1,241 @@
+<html>
+<head>
+<link rel="stylesheet" href="leaflet.css" />
+<style>
+html,body{
+    margin:0;
+}
+.minimap {
+    width: 410px;
+    height: 410px;
+    position: absolute;
+    padding: 10px;
+    visibility: hidden;
+}
+.cont {
+    width: 410px;
+    height: 409px;
+    background-image: url("images/border.png");
+    transform-origin: 0 0;
+}
+.hcont {
+    width: 200px;
+    height: 410px;
+    position: relative;
+    overflow: hidden;
+    border: 1px solid transparent;
+    transform: rotate(5deg);
+    transform-origin: 100%;
+}
+.health {
+    width: 350px;
+    height: 350px;
+    position: absolute;
+    margin: 5px 0 0 5px;
+    position: absolute;
+}
+.hbar {
+    width: 50%;
+    height: 100%;
+    position: absolute;
+    border: 24px solid rgb(235, 235, 235);
+    border-right: none;
+    border-radius: 350px 0 0 350px;
+    z-index: 200;
+    transform: rotate(281deg);
+    transform-origin: 100%;
+    transition: transform 0.5s linear;
+}
+.marker {
+    width: 100px;
+    position: absolute;
+    margin: -249px 0 0 160px;
+    opacity: 0.5;
+    z-index: 10;
+    transform: rotate(0deg);
+}
+.mcont {
+    width: 342px;
+    height: 342px;
+    position: fixed !important;
+    display: block;
+    margin: -376px 0 0 35px;
+    float: left;
+    border-radius: 50%;
+    z-index: 1;
+    overflow: hidden;
+}
+.map {
+    width: 342px;
+    height: 342px;
+    background: #152f3a;
+    opacity: 0.8;
+}
+
+.leaflet-control-zoom,
+.leaflet-control-attribution {
+    display: none !important;
+}
+</style>
+</head>
+<body>
+<div class="minimap">
+    <div class="cont">
+        <div class="hcont">
+            <div class="health">
+                <div class="hbar"></div>
+            </div>
+        </div>
+    </div>
+    <img class="marker" src="images/marker.png">
+    <div class="mcont">
+        <div id="map" class="map"></div>
+    </div>
+</div>
+<script src="leaflet.js"></script>
+<script>
+var m = L.map('map', {
+    crs: L.CRS.Simple
+}).setView([0, 0], 4);
+m.dragging.disable();
+m.touchZoom.disable();
+m.doubleClickZoom.disable();
+m.scrollWheelZoom.disable();
+m.boxZoom.disable();
+m.keyboard.disable();
+m.zoomControl.disable();
+L.tileLayer('map/{z}/{y}/{x}.png', {
+    maxZoom: 4,
+    minZoom: 4
+}).addTo(m);
+
+function pan(lat, lng) {
+    let s = 0.78111749;
+    lat = (lat * s) - 128;
+    lng = (lng * s) + 128;
+    m.panTo([lat, lng], {
+        easeLinearity: 1,
+        duration: 0.1
+    });
+}
+
+const mm = document.getElementsByClassName("minimap")[0];
+const dc = document.getElementsByClassName("cont")[0];
+const dm = document.getElementsByClassName("mcont")[0];
+const dmm = document.getElementsByClassName("map")[0];
+const dk = document.getElementsByClassName("marker")[0];
+const hb = document.getElementsByClassName("hbar")[0];
+var setup = false;
+
+function setLarge(l) {
+    if(l) {
+        mm.style.height = "410px";
+        mm.style.width = "410px";
+        dc.style.transform = "";
+        dm.style.width = "342px";
+        dm.style.height = "342px";
+        dm.style.margin = "-376px 0 0 35px";
+        dk.style.width = "100px";
+        dk.style.margin = "-249px 0 0 160px";
+        dmm.style.margin = "";
+    } else {
+        mm.style.height = "205px";
+        mm.style.width = "205px";
+        dc.style.transform = "scale(.5)";
+        dm.style.width = "171px";
+        dm.style.height = "171px";
+        dm.style.margin = "-392px 0 0 17.4px";
+        dk.style.width = "50px";
+        dk.style.margin = "-329px 0 0 80px";
+        dmm.style.margin = "-85.5px 0 0 -85.5px";
+    }
+}
+
+function setPos(p) {
+    switch(p){
+        case 1:
+            mm.style.top = "0";
+            mm.style.right = "0";
+            mm.style.bottom = "";
+            mm.style.left = "";
+            break;
+        case 2:
+            mm.style.top = "";
+            mm.style.right = "0";
+            mm.style.bottom = "0";
+            mm.style.left = "";
+            break;
+        case 3:
+            mm.style.top = "";
+            mm.style.right = "";
+            mm.style.bottom = "0";
+            mm.style.left = "0";
+            break;
+        default:
+            mm.style.top = "0";
+            mm.style.right = "";
+            mm.style.bottom = "";
+            mm.style.left = "0";
+            break;
+    }
+}
+jcmp.AddEvent('cmm_setup', (c) => {
+  if(!setup){
+    setup = true;
+    c = JSON.parse(c);
+    setLarge(c.us);
+    setPos(c.up);
+    startTimers(c.tp,c.th);
+    mm.style.visibility = "visible";
+  }
+});
+
+function startTimers(tp,th){
+    const updatePos = setInterval(() => {
+        jcmp.CallEvent('cmm_rposupdate','');
+        //jcmp.ui.CallEvent('cmm_rotupdate',jcmp.localPlayer.rotation.y);
+        //jcmp.ui.CallEvent('cmm_lookupdate',jcmp.localPlayer.camera.rotation.y);
+    }, tp);
+
+    const updateHealth = setInterval(() => {
+        jcmp.CallEvent('cmm_rhealthupdate','');
+    }, th);
+
+}
+
+function setHealth(h) {
+    //h is value between 0 and 1;
+    var r = h > 1 ? false : h < 0 ? false : (hb.style.transform = "rotate(" + ((h * 100) + 181) + "deg)", r = true);
+    return r;
+}
+
+jcmp.AddEvent('cmm_posupdate', (p) => {
+  if(setup){
+    console.log(p);
+    p = JSON.parse(p);
+    pan(p[0], p[1]);
+  }
+});
+/*jcmp.AddEvent('cmm_rotupdate', (y) => {
+    var deg = 0;
+    if(lat) {
+        deg = 57.29578 * (y * Math.PI) + 360
+    } else {
+        deg = 57.29578 * (y * Math.PI) + 180
+    }
+    deg = deg > 360 ? deg : deg - 360;
+    //dm.style.transform = "rotate("+deg+"deg)";
+    //dk.style.transform = "rotate("+deg+"deg)";
+});
+jcmp.AddEvent('cmm_lookupdate', (y) => {
+    // console.log(pos);
+    //map.panTo(new L.LatLng(pos[0], pos[1]));
+    //var rot1 = Math.floor(((pos/Math.PI)*360));
+    //log.innerHTML = pos;
+});*/
+jcmp.AddEvent('cmm_healthupdate', (h) => {
+    setHealth(h);
+});
+</script>
+</body>
+</html>
